@@ -6,9 +6,10 @@ import os
 app = Flask(__name__)
 DB_FILE = 'data.json'
 
+# Replace with your real Adsterra direct link
 ADSTERRA_DIRECT_LINK = "https://databoilrecommendation.com/a52kwdsp?key=48733586a54d108787728e166e87a4b6"
 
-# Load existing data or initialize
+# Load existing data or create new
 if os.path.exists(DB_FILE):
     with open(DB_FILE, 'r') as f:
         url_db = json.load(f)
@@ -22,15 +23,61 @@ def save_db():
 @app.route('/')
 def index():
     return '''
+    <!DOCTYPE html>
     <html>
-    <head><title>QuickLink</title></head>
-    <body style="text-align:center;padding-top:100px;">
-        <h2>🔗 QuickLink Shortener</h2>
-        <form action="/shorten" method="post">
-            <input type="text" name="long_url" placeholder="Enter long URL" size="50" required />
-            <br><br>
-            <input type="submit" value="Shorten" />
-        </form>
+    <head>
+        <title>QuickLink Shortener</title>
+        <style>
+            body {
+                background: #f0f4f8;
+                font-family: 'Segoe UI', sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }
+            .card {
+                background: white;
+                padding: 40px;
+                border-radius: 12px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                text-align: center;
+                max-width: 500px;
+                width: 90%;
+            }
+            input[type="text"] {
+                width: 80%;
+                padding: 10px;
+                margin-top: 20px;
+                font-size: 16px;
+                border-radius: 8px;
+                border: 1px solid #ccc;
+            }
+            input[type="submit"] {
+                margin-top: 20px;
+                padding: 10px 20px;
+                font-size: 16px;
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+            }
+            input[type="submit"]:hover {
+                background-color: #45a049;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>🔗 QuickLink Shortener</h2>
+            <form action="/shorten" method="post">
+                <input type="text" name="long_url" placeholder="Paste your long URL here" required />
+                <br>
+                <input type="submit" value="Shorten URL" />
+            </form>
+        </div>
     </body>
     </html>
     '''
@@ -41,11 +88,85 @@ def shorten():
     key = str(uuid.uuid4())[:8]
     url_db[key] = {"url": long_url}
     save_db()
+    
+    short_link = f"/go/{key}"
+
     return f'''
-    <html><body style="text-align:center;padding-top:100px;">
-    <h2>✅ Shortened Link:</h2>
-    <p><a href="/go/{key}" target="_blank">urlsh.com/go/{key}</a></p>
-    </body></html>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Shortened URL</title>
+        <style>
+            body {{
+                background: #f7f8fc;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }}
+            .card {{
+                background: white;
+                padding: 40px;
+                border-radius: 15px;
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+                text-align: center;
+                width: 90%;
+                max-width: 500px;
+            }}
+            .link-box {{
+                margin: 20px 0;
+                font-size: 18px;
+                word-wrap: break-word;
+                background: #f0f0f0;
+                padding: 10px;
+                border-radius: 8px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }}
+            .btn {{
+                padding: 10px 20px;
+                border: none;
+                background: #4CAF50;
+                color: white;
+                border-radius: 8px;
+                font-size: 16px;
+                cursor: pointer;
+                margin: 10px;
+            }}
+            .btn:hover {{
+                background: #45a049;
+            }}
+            .copy-btn {{
+                background: #008CBA;
+            }}
+            .copy-btn:hover {{
+                background: #0078a0;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>✅ Your Shortened Link</h2>
+            <div class="link-box">
+                <span id="shortLink">urlsh.com{short_link}</span>
+                <button class="btn copy-btn" onclick="copyLink()">Copy</button>
+            </div>
+            <a href="/" class="btn">🔁 Short Another URL</a>
+        </div>
+
+        <script>
+            function copyLink() {{
+                const text = document.getElementById('shortLink').innerText;
+                navigator.clipboard.writeText(window.location.origin + '{short_link}');
+                alert("Link copied to clipboard!");
+            }}
+        </script>
+    </body>
+    </html>
     '''
 
 @app.route('/go/<key>')

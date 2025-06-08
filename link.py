@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, render_template_string
+from flask import Flask, request, render_template_string
 import uuid
 import json
 import os
@@ -6,10 +6,9 @@ import os
 app = Flask(__name__)
 DB_FILE = 'data.json'
 
-# Replace with your Adsterra Direct Link
 ADSTERRA_DIRECT_LINK = "https://databoilrecommendation.com/a52kwdsp?key=48733586a54d108787728e166e87a4b6"
 
-# Load or initialize database
+# Load existing data or initialize
 if os.path.exists(DB_FILE):
     with open(DB_FILE, 'r') as f:
         url_db = json.load(f)
@@ -23,7 +22,6 @@ def save_db():
 @app.route('/')
 def index():
     return '''
-    <!DOCTYPE html>
     <html>
     <head><title>QuickLink</title></head>
     <body style="text-align:center;padding-top:100px;">
@@ -41,7 +39,7 @@ def index():
 def shorten():
     long_url = request.form['long_url']
     key = str(uuid.uuid4())[:8]
-    url_db[key] = {"url": long_url, "visits": 0}
+    url_db[key] = {"url": long_url}
     save_db()
     return f'''
     <html><body style="text-align:center;padding-top:100px;">
@@ -55,31 +53,25 @@ def go(key):
     if key not in url_db:
         return "Invalid or expired link", 404
 
-    info = url_db[key]
-    info['visits'] += 1
-    save_db()
+    long_url = url_db[key]['url']
 
-    if info['visits'] == 1:
-        # On first visit, show HTML that opens Adsterra in new tab and redirects to long URL
-        return render_template_string(f"""
-        <html>
-        <head>
-            <title>Redirecting...</title>
-            <script>
-                window.onload = function() {{
-                    window.open("{ADSTERRA_DIRECT_LINK}", "_blank");
-                    window.location.href = "{info['url']}";
-                }};
-            </script>
-        </head>
-        <body>
-            <p>Redirecting to your link...</p>
-        </body>
-        </html>
-        """)
-    else:
-        # From second visit onwards, go directly to long URL
-        return redirect(info['url'])
+    return render_template_string(f"""
+    <html>
+    <head>
+        <title>Redirecting...</title>
+        <script>
+            window.onload = function() {{
+                window.open("{ADSTERRA_DIRECT_LINK}", "_blank");
+                window.open("{long_url}", "_blank");
+            }};
+        </script>
+    </head>
+    <body>
+        <h3>✅ Both links are opening in new tabs...</h3>
+        <p>If nothing happens, please allow pop-ups.</p>
+    </body>
+    </html>
+    """)
 
 if __name__ == '__main__':
     app.run(debug=True)

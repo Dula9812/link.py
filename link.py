@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect
+from flask import Flask, request, redirect, render_template_string
 import uuid
 import json
 import os
@@ -6,69 +6,33 @@ import os
 app = Flask(__name__)
 DB_FILE = 'data.json'
 
-# Adsterra direct link
+# Replace with your Adsterra Direct Link
 ADSTERRA_DIRECT_LINK = "https://databoilrecommendation.com/a52kwdsp?key=48733586a54d108787728e166e87a4b6"
 
-# Load existing data
+# Load or initialize database
 if os.path.exists(DB_FILE):
     with open(DB_FILE, 'r') as f:
         url_db = json.load(f)
 else:
     url_db = {}
 
-@app.route('/', methods=['GET'])
-def home():
+def save_db():
+    with open(DB_FILE, 'w') as f:
+        json.dump(url_db, f)
+
+@app.route('/')
+def index():
     return '''
     <!DOCTYPE html>
     <html>
-    <head>
-        <title>QuickLink Converter</title>
-        <style>
-            body {
-                font-family: 'Segoe UI', sans-serif;
-                background: linear-gradient(to right, #ece9e6, #ffffff);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                margin: 0;
-            }
-            .container {
-                background: white;
-                padding: 40px;
-                border-radius: 12px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-                text-align: center;
-                width: 90%;
-                max-width: 500px;
-            }
-            input[type="text"], input[type="submit"] {
-                width: 90%;
-                padding: 12px;
-                margin: 10px 0;
-                font-size: 16px;
-                border-radius: 8px;
-                border: 1px solid #ccc;
-            }
-            input[type="submit"] {
-                background-color: #3b82f6;
-                color: white;
-                border: none;
-                cursor: pointer;
-            }
-            input[type="submit"]:hover {
-                background-color: #2563eb;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h2>🔗 QuickLink Converter</h2>
-            <form action="/shorten" method="post">
-                <input name="long_url" type="text" placeholder="Paste your long URL here" required/>
-                <input type="submit" value="Shorten"/>
-            </form>
-        </div>
+    <head><title>QuickLink</title></head>
+    <body style="text-align:center;padding-top:100px;">
+        <h2>🔗 QuickLink Shortener</h2>
+        <form action="/shorten" method="post">
+            <input type="text" name="long_url" placeholder="Enter long URL" size="50" required />
+            <br><br>
+            <input type="submit" value="Shorten" />
+        </form>
     </body>
     </html>
     '''
@@ -77,9 +41,8 @@ def home():
 def shorten():
     long_url = request.form['long_url']
     key = str(uuid.uuid4())[:8]
-    url_db[key] = long_url
-    with open(DB_FILE, 'w') as f:
-        json.dump(url_db, f)
+    url_db[key] = {"url": long_url, "visits": 0}
+    save_db()
     return f'''
     <html><body style="text-align:center;padding-top:100px;">
     <h2>✅ Shortened Link:</h2>
@@ -89,11 +52,34 @@ def shorten():
 
 @app.route('/go/<key>')
 def go(key):
-    if key in url_db:
-        final_url = url_db[key]
-        return redirect(f"{ADSTERRA_DIRECT_LINK}?ref={final_url}")
+    if key not in url_db:
+        return "Invalid or expired link", 404
+
+    info = url_db[key]
+    info['visits'] += 1
+    save_db()
+
+    if info['visits'] == 1:
+        # On first visit, show HTML that opens Adsterra in new tab and redirects to long URL
+        return render_template_string(f"""
+        <html>
+        <head>
+            <title>Redirecting...</title>
+            <script>
+                window.onload = function() {{
+                    window.open("{ADSTERRA_DIRECT_LINK}", "_blank");
+                    window.location.href = "{info['url']}";
+                }};
+            </script>
+        </head>
+        <body>
+            <p>Redirecting to your link...</p>
+        </body>
+        </html>
+        """)
     else:
-        return "Invalid link.", 404
+        # From second visit onwards, go directly to long URL
+        return redirect(info['url'])
 
 if __name__ == '__main__':
     app.run(debug=True)

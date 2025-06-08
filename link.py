@@ -1,11 +1,20 @@
 from flask import Flask, request, redirect
 import uuid
+import json
+import os
 
 app = Flask(__name__)
-url_db = {}
+DB_FILE = 'data.json'
 
-# ✅ Your Adsterra Direct Link (replace if needed)
+# Adsterra direct link
 ADSTERRA_DIRECT_LINK = "https://databoilrecommendation.com/a52kwdsp?key=48733586a54d108787728e166e87a4b6"
+
+# Load existing data
+if os.path.exists(DB_FILE):
+    with open(DB_FILE, 'r') as f:
+        url_db = json.load(f)
+else:
+    url_db = {}
 
 @app.route('/', methods=['GET'])
 def home():
@@ -16,17 +25,16 @@ def home():
         <title>QuickLink Converter</title>
         <style>
             body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                font-family: 'Segoe UI', sans-serif;
                 background: linear-gradient(to right, #ece9e6, #ffffff);
-                margin: 0;
-                padding: 0;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 height: 100vh;
+                margin: 0;
             }
             .container {
-                background: #fff;
+                background: white;
                 padding: 40px;
                 border-radius: 12px;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.1);
@@ -34,27 +42,19 @@ def home():
                 width: 90%;
                 max-width: 500px;
             }
-            h2 {
-                color: #333;
-                margin-bottom: 20px;
-            }
-            input[type="text"] {
+            input[type="text"], input[type="submit"] {
                 width: 90%;
                 padding: 12px;
                 margin: 10px 0;
-                border: 1px solid #ccc;
-                border-radius: 8px;
                 font-size: 16px;
+                border-radius: 8px;
+                border: 1px solid #ccc;
             }
             input[type="submit"] {
                 background-color: #3b82f6;
                 color: white;
-                padding: 12px 24px;
                 border: none;
-                border-radius: 8px;
                 cursor: pointer;
-                font-size: 16px;
-                transition: background-color 0.3s ease;
             }
             input[type="submit"]:hover {
                 background-color: #2563eb;
@@ -66,8 +66,7 @@ def home():
             <h2>🔗 QuickLink Converter</h2>
             <form action="/shorten" method="post">
                 <input name="long_url" type="text" placeholder="Paste your long URL here" required/>
-                <br>
-                <input type="submit" value="Shorten">
+                <input type="submit" value="Shorten"/>
             </form>
         </div>
     </body>
@@ -79,43 +78,13 @@ def shorten():
     long_url = request.form['long_url']
     key = str(uuid.uuid4())[:8]
     url_db[key] = long_url
+    with open(DB_FILE, 'w') as f:
+        json.dump(url_db, f)
     return f'''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Link Shortened</title>
-        <style>
-            body {{
-                font-family: Arial, sans-serif;
-                background-color: #f9f9f9;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
-            }}
-            .result {{
-                background: #fff;
-                padding: 40px;
-                border-radius: 12px;
-                box-shadow: 0 0 20px rgba(0,0,0,0.1);
-                text-align: center;
-            }}
-            a {{
-                color: #3b82f6;
-                text-decoration: none;
-                font-weight: bold;
-                font-size: 20px;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="result">
-            <h2>✅ Shortened Link:</h2>
-            <p><a href="/go/{key}" target="_blank">urlsh.com/go/{key}</a></p>
-        </div>
-    </body>
-    </html>
+    <html><body style="text-align:center;padding-top:100px;">
+    <h2>✅ Shortened Link:</h2>
+    <p><a href="/go/{key}" target="_blank">urlsh.com/go/{key}</a></p>
+    </body></html>
     '''
 
 @app.route('/go/<key>')

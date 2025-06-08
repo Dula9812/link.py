@@ -1,36 +1,62 @@
-from flask import Flask, request, redirect
-import uuid
+from flask import Flask, redirect
 
 app = Flask(__name__)
-url_db = {}
 
-# Replace this with your actual Adsterra Direct Link
-ADSTERRA_DIRECT_LINK = "https://databoilrecommendation.com/a52kwdsp?key=48733586a54d108787728e166e87a4b6"
+# Your Adsterra Direct Link
+ADSTERRA_LINK = "https://www.adsterra.com/example-direct-link"  # replace this with your real link
 
-@app.route('/', methods=['GET'])
-def home():
+@app.route('/')
+def landing():
     return '''
-        <h2>QuickLink Converter</h2>
-        <form action="/shorten" method="post">
-            <input name="long_url" type="text" placeholder="Paste your long URL here" size="50"/>
-            <input type="submit" value="Shorten"/>
-        </form>
+    <html>
+    <head>
+        <title>Adsterra Redirect</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                font-size: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+                background: linear-gradient(145deg, #d8e6ff, #ffffff);
+            }
+            .container {
+                background: white;
+                padding: 40px;
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+                text-align: center;
+            }
+            a {
+                display: inline-block;
+                margin-top: 20px;
+                text-decoration: none;
+                background-color: #3b82f6;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-weight: bold;
+            }
+            a:hover {
+                background-color: #2563eb;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <p>✅ Your Adsterra redirect link is working!</p>
+            <p>Click below to continue to the site:</p>
+            <a href="/go">Go to Website</a>
+        </div>
+    </body>
+    </html>
     '''
 
-@app.route('/shorten', methods=['POST'])
-def shorten():
-    long_url = request.form['long_url']
-    key = str(uuid.uuid4())[:8]
-    url_db[key] = long_url
-    return f'Shortened Link: <a href="/go/{key}">urlsh.com/go/{key}</a>'
-
-@app.route('/go/<key>')
-def go(key):
-    if key in url_db:
-        final_url = url_db[key]
-        return redirect(f"{ADSTERRA_DIRECT_LINK}?ref={final_url}")
-    else:
-        return "Invalid link.", 404
+@app.route('/go')
+def go():
+    return redirect(ADSTERRA_LINK)
 
 if __name__ == '__main__':
     app.run(debug=True)

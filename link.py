@@ -26,6 +26,7 @@ def index():
     <!DOCTYPE html>
     <html>
     <head>
+        <meta name="7searchppc" content="0441801e11cd79128f45417f4a693374"/>
         <title>QuickLink Shortener</title>
         <style>
             body {
